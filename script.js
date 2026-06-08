@@ -151,7 +151,7 @@ function applyTheme(themeKey) {
 }
 
 // ============================================================
-// 4. LOCALSTRAGE HELPERS  (custom invites)
+// 4. LOCALSTRAGE HELPERS  (custom invites + welcome msg)
 // ============================================================
 
 /** Load custom invites from localStorage into state. */
@@ -192,6 +192,45 @@ function loadCompletedStates() {
 /** Save completed invite IDs to localStorage. */
 function saveCompletedStates() {
   localStorage.setItem('maila_completed_ids', JSON.stringify([...completedInviteIds]));
+}
+
+/** Load the admin-set welcome message from localStorage. */
+function loadWelcomeMsgIntoAdmin() {
+  const msg = localStorage.getItem('maila_welcome_msg') || '';
+  const input = document.getElementById('welcome-msg-input');
+  if (input) input.value = msg;
+}
+
+/** Save the admin welcome message and confirm. */
+window.saveWelcomeMsg = function () {
+  const msg = (document.getElementById('welcome-msg-input').value || '').trim();
+  if (msg) {
+    localStorage.setItem('maila_welcome_msg', msg);
+  } else {
+    localStorage.removeItem('maila_welcome_msg');
+  }
+  showToast('Welcome message saved!', '💌');
+};
+
+/**
+ * getCountdownText(dateISO)
+ * Returns a human-readable countdown string, or null if no date / date has passed.
+ */
+function getCountdownText(dateISO) {
+  if (!dateISO) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateISO + 'T00:00:00');
+  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return null;
+  if (diffDays === 0) return 'Today! 🎉';
+  if (diffDays === 1) return 'Tomorrow!';
+  return `${diffDays} days away`;
+}
+
+/** Returns true if the invite was just revealed within the last 24 hours. */
+function isNewlyRevealed(invite) {
+  return !invite.hidden && invite.revealedAt && (Date.now() - invite.revealedAt < 24 * 60 * 60 * 1000);
 }
 
 /** Toggle completed state of an invitation. */
@@ -267,6 +306,9 @@ window.startEditingInvite = function (id) {
   document.getElementById('invite-date').value = invite.date;
   document.getElementById('invite-theme').value = invite.theme;
   document.getElementById('invite-calendar').value = invite.calendar;
+  document.getElementById('invite-date-iso').value = invite.dateISO || '';
+  document.getElementById('invite-hidden').checked = !!invite.hidden;
+  document.getElementById('invite-admin-notes').value = invite.adminNotes || '';
 
   editingInviteId = id;
   updateFormState();
@@ -472,7 +514,8 @@ function attemptUnlock() {
     transitionScreen(mailaPortal);
     sessionStorage.setItem('portal_session', 'maila');
     renderInvitesFeed();
-    showToast('Welcome back, Maila! 💖', '🌴');
+    const welcomeMsg = localStorage.getItem('maila_welcome_msg');
+    showToast(welcomeMsg || 'Welcome back, Maila! 💖', welcomeMsg ? '💌' : '🌴');
 
   } else if (code === 'JM44') {
     transitionScreen(adminPortal);
@@ -536,7 +579,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Sync data & theme updates across multiple open tabs/windows
 window.addEventListener('storage', (e) => {
-  if (e.key === 'maila_custom_invites' || e.key === 'maila_completed_ids' || e.key === 'maila_theme' || e.key === 'maila_edited_presets') {
+  if (e.key === 'maila_custom_invites' || e.key === 'maila_completed_ids' || e.key === 'maila_theme' || e.key === 'maila_edited_presets' || e.key === 'maila_welcome_msg') {
     loadTheme();
     loadInvitesState();
     loadCompletedStates();
@@ -586,7 +629,8 @@ document.querySelectorAll('.action-card.locked').forEach((card) => {
 
 /** Render all invites (custom + defaults) into the invites grid. */
 function renderInvitesFeed() {
-  const invites = getCombinedInvites();
+  // Filter out hidden invites — Maila never sees them
+  const invites = getCombinedInvites().filter((inv) => !inv.hidden);
   invitesGrid.innerHTML = '';
 
   if (invites.length === 0) {
@@ -600,6 +644,8 @@ function renderInvitesFeed() {
   invites.forEach((invite) => {
     const themeClass = invite.theme || 'theme-pink-purple';
     const isCompleted = completedInviteIds.has(invite.id);
+    const newlyRevealed = isNewlyRevealed(invite);
+    const countdownText = getCountdownText(invite.dateISO);
 
     // Badge text depends on the invite card colour theme (not the site season)
     const badges = {
@@ -608,6 +654,13 @@ function renderInvitesFeed() {
       'theme-gold-orange': 'TROPICAL NIGHTS 44',
     };
     const badgeText = badges[themeClass] || 'DATE NIGHT';
+
+    let statusBadgeHtml = '';
+    if (isCompleted) {
+      statusBadgeHtml = '<span class="invite-completed-badge">✓ Completed</span>';
+    } else if (newlyRevealed) {
+      statusBadgeHtml = '<span class="invite-new-badge">✨ New!</span>';
+    }
 
     let acceptBtnHtml = '';
     if (isCompleted) {
@@ -631,7 +684,7 @@ function renderInvitesFeed() {
         <div class="invite-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 1.25rem;">
             <span class="invite-badge" style="margin-bottom: 0;">${badgeText}</span>
-            ${isCompleted ? '<span class="invite-completed-badge">✓ Completed</span>' : ''}
+            ${statusBadgeHtml}
           </div>
           <h3 class="invite-title-text">${invite.title}</h3>
           <p class="invite-desc-text">${invite.desc}</p>
@@ -641,6 +694,7 @@ function renderInvitesFeed() {
             <span class="invite-info-icon">📅</span>
             <span>${invite.date}</span>
           </div>
+          ${countdownText ? `<div class="countdown-chip">${countdownText}</div>` : ''}
           ${acceptBtnHtml}
           <a href="${invite.calendar}"
              target="_blank"
@@ -653,6 +707,33 @@ function renderInvitesFeed() {
     `);
   });
 }
+
+/** Surprise Me — randomly highlight a non-completed visible invite. */
+window.surpriseMe = function () {
+  const eligible = getCombinedInvites().filter((inv) => !inv.hidden && !completedInviteIds.has(inv.id));
+  if (eligible.length === 0) {
+    showToast('No active invites yet — check back soon!', '🎲');
+    return;
+  }
+  const pick = eligible[Math.floor(Math.random() * eligible.length)];
+
+  // Open invites section if closed
+  if (invitesSection.classList.contains('hidden')) {
+    invitesSection.classList.remove('hidden');
+  }
+  renderInvitesFeed();
+
+  setTimeout(() => {
+    const card = document.getElementById('card-' + pick.id);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('surprise-highlight');
+      setTimeout(() => card.classList.remove('surprise-highlight'), 3500);
+    }
+  }, 200);
+
+  showToast(`Fate chose: "${pick.title}" ✨`, '🎲');
+};
 
 /** Trigger heart/sparkle burst and a toast when an invite is accepted. */
 window.acceptInvitation = function (event, title) {
@@ -669,6 +750,7 @@ window.acceptInvitation = function (event, title) {
 function renderAdminPanel() {
   renderThemePanel();
   renderInviteManager();
+  loadWelcomeMsgIntoAdmin();
 }
 
 // ── 9a. THEME SELECTOR PANEL ─────────────────────────────────
@@ -734,23 +816,28 @@ inviteForm.addEventListener('submit', (e) => {
   const date = document.getElementById('invite-date').value.trim();
   const theme = document.getElementById('invite-theme').value;
   const calendar = document.getElementById('invite-calendar').value.trim();
+  const dateISO = document.getElementById('invite-date-iso').value;
+  const hidden = document.getElementById('invite-hidden').checked;
+  const adminNotes = document.getElementById('invite-admin-notes').value.trim();
 
   if (editingInviteId) {
     const isPreset = editingInviteId.startsWith('preset-');
     if (isPreset) {
+      const existing = editedPresets[editingInviteId] || {};
+      // Preserve revealedAt if it was previously set
+      const revealedAt = (!hidden && existing.hidden && !existing.revealedAt) ? Date.now() : (existing.revealedAt || null);
       editedPresets[editingInviteId] = {
         id: editingInviteId,
-        title,
-        desc,
-        date,
-        theme,
-        calendar
+        title, desc, date, theme, calendar, dateISO, adminNotes, hidden,
+        ...(revealedAt ? { revealedAt } : {}),
       };
       saveEditedPresets();
     } else {
       customInvites = customInvites.map((inv) => {
         if (inv.id === editingInviteId) {
-          return { ...inv, title, desc, date, theme, calendar };
+          const revealedAt = (!hidden && inv.hidden && !inv.revealedAt) ? Date.now() : (inv.revealedAt || null);
+          return { ...inv, title, desc, date, theme, calendar, dateISO, adminNotes, hidden,
+            ...(revealedAt ? { revealedAt } : {}) };
         }
         return inv;
       });
@@ -762,17 +849,13 @@ inviteForm.addEventListener('submit', (e) => {
     showToast('Invitation updated successfully!', '✨');
   } else {
     const newInvite = {
-      id:       'custom-' + Date.now(),
-      title,
-      desc,
-      date,
-      theme,
-      calendar,
+      id: 'custom-' + Date.now(),
+      title, desc, date, theme, calendar, dateISO, adminNotes, hidden,
     };
 
     customInvites.unshift(newInvite);
     saveInvitesState();
-    showToast('New invitation published!', '✨');
+    showToast(hidden ? 'Invitation saved (hidden from Maila 🫣)' : 'New invitation published!', '✨');
   }
 
   renderInviteManager();
@@ -804,24 +887,32 @@ function renderInviteManager() {
     allInvites.forEach((invite) => {
       const isCompleted = completedInviteIds.has(invite.id);
       const isPreset = invite.id.startsWith('preset-');
-      
+      const isHidden = !!invite.hidden;
+
       const row = document.createElement('div');
-      row.className = `custom-invite-row ${isCompleted ? 'completed' : ''}`;
+      row.className = `custom-invite-row ${isCompleted ? 'completed' : ''} ${isHidden ? 'hidden-invite' : ''}`;
       row.innerHTML = `
         <div class="custom-invite-info">
           <div class="custom-invite-title">
             ${invite.title}
             <span class="invite-source-tag">${isPreset ? 'Preset' : 'Custom'}</span>
+            ${isHidden ? '<span class="invite-hidden-tag">👁️‍🗨️ Hidden</span>' : ''}
           </div>
           <div class="custom-invite-meta">
             ${invite.date} &bull; ${themeLabels[invite.theme] || invite.theme}
           </div>
+          ${invite.adminNotes ? `<div class="admin-notes-preview">📝 ${invite.adminNotes}</div>` : ''}
         </div>
         <div class="custom-invite-actions">
           <button class="custom-invite-action-btn btn-edit"
                   onclick="startEditingInvite('${invite.id}')"
                   title="Edit invite">
             ✏️
+          </button>
+          <button class="custom-invite-action-btn btn-hide ${isHidden ? 'active' : ''}"
+                  onclick="toggleHidden('${invite.id}')"
+                  title="${isHidden ? 'Reveal to Maila' : 'Hide from Maila'}">
+            ${isHidden ? '👁️‍🗨️' : '👁️'}
           </button>
           <button class="custom-invite-action-btn btn-done ${isCompleted ? 'active' : ''}"
                   onclick="toggleCompleted('${invite.id}')"
@@ -835,9 +926,9 @@ function renderInviteManager() {
               🗑️
             </button>
           ` : `
-            <button class="custom-invite-action-btn btn-delete" 
-                    style="opacity: 0.3; cursor: not-allowed;" 
-                    disabled 
+            <button class="custom-invite-action-btn btn-delete"
+                    style="opacity: 0.3; cursor: not-allowed;"
+                    disabled
                     title="Preset invitations cannot be deleted">
               🗑️
             </button>
@@ -848,6 +939,47 @@ function renderInviteManager() {
     });
   }
 }
+
+/** Toggle hidden state of an invitation (admin-only). */
+window.toggleHidden = function (id) {
+  const invites = getCombinedInvites();
+  const invite = invites.find((i) => i.id === id);
+  if (!invite) return;
+
+  const wasHidden = !!invite.hidden;
+  const isPreset = id.startsWith('preset-');
+
+  if (isPreset) {
+    const existing = editedPresets[id] || {};
+    const nowHidden = !wasHidden;
+    editedPresets[id] = {
+      ...existing,
+      id,
+      hidden: nowHidden,
+      // Set revealedAt when switching hidden→visible
+      revealedAt: (!nowHidden ? Date.now() : (existing.revealedAt || null)),
+    };
+    saveEditedPresets();
+  } else {
+    customInvites = customInvites.map((inv) => {
+      if (inv.id !== id) return inv;
+      const nowHidden = !inv.hidden;
+      return {
+        ...inv,
+        hidden: nowHidden,
+        revealedAt: (!nowHidden ? Date.now() : (inv.revealedAt || null)),
+      };
+    });
+    saveInvitesState();
+  }
+
+  renderInviteManager();
+  renderInvitesFeed();
+  showToast(
+    wasHidden ? 'Invite is now visible to Maila! 👁️' : 'Invite hidden from Maila 🫣',
+    wasHidden ? '✨' : '👁️‍🗨️',
+  );
+};
 
 window.deleteCustomInvite = function (id) {
   customInvites = customInvites.filter((inv) => inv.id !== id);

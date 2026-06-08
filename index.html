@@ -77,6 +77,15 @@
           <h3 class="action-title">Photos</h3>
           <p class="action-desc">Coming soon in Season 2 🌴</p>
         </div>
+
+        <!-- Surprise Me Button -->
+        <div class="action-card active" id="action-surprise" onclick="surpriseMe()">
+          <div class="action-icon-wrapper">
+            <span class="action-icon">🎲</span>
+          </div>
+          <h3 class="action-title text-neon-gradient">Surprise Me</h3>
+          <p class="action-desc">Let fate pick your next date night adventure.</p>
+        </div>
       </section>
 
       <!-- Invites / Date Night Section (revealed when clicking Invites card) -->
@@ -111,6 +120,16 @@
       <!-- Season Theme Selector (full-width, above the grid) -->
       <div class="glass-card" id="admin-theme-panel">
         <!-- Rendered by renderThemePanel() in script.js -->
+      </div>
+
+      <!-- Welcome Message Panel -->
+      <div class="glass-card admin-welcome-panel" id="admin-welcome-panel">
+        <h2 class="admin-section-title"><span style="color: var(--neon-pink);">✦</span> Maila's Welcome Message</h2>
+        <p class="action-desc" style="margin-bottom: 1.25rem;">A personal message Maila sees as a toast when she logs in. Leave blank to use the default.</p>
+        <div class="admin-welcome-row">
+          <input type="text" id="welcome-msg-input" class="admin-input" placeholder="e.g., Good morning, my love ☀️" maxlength="120">
+          <button class="admin-submit-btn admin-welcome-save-btn" onclick="saveWelcomeMsg()">SAVE</button>
+        </div>
       </div>
 
       <div class="admin-grid">
@@ -149,6 +168,24 @@
               <label class="admin-form-label" for="invite-calendar">Google Calendar Link</label>
               <input type="url" id="invite-calendar" class="admin-input" placeholder="https://calendar.google.com/..."
                 required>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-date-iso">Countdown Date <span style="opacity:0.5;">(optional — drives the "X days away" chip)</span></label>
+              <input type="date" id="invite-date-iso" class="admin-input">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-admin-notes">Planning Notes <span style="opacity:0.5;">(admin only — never visible to Maila)</span></label>
+              <textarea id="invite-admin-notes" class="admin-textarea" placeholder="Reservation details, gift ideas, budget…" style="min-height:70px;"></textarea>
+            </div>
+
+            <div class="admin-form-group admin-toggle-group">
+              <label class="admin-toggle-label">
+                <input type="checkbox" id="invite-hidden" class="admin-toggle-checkbox">
+                <span class="admin-toggle-text">🫣 Hide from Maila (surprise mode)</span>
+              </label>
+              <p class="admin-toggle-hint">Reveal anytime from the invite list — she'll see a "New!" badge.</p>
             </div>
 
             <div class="admin-form-actions" id="form-actions-container">

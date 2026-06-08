@@ -1263,3 +1263,162 @@ body {
   margin-left: 0.5rem;
   letter-spacing: 0.5px;
 }
+
+/* ==========================================
+   Countdown Chip (Maila's card footer)
+   ========================================== */
+.countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(var(--theme-secondary-rgb), 0.1);
+  color: var(--theme-secondary);
+  border: 1px solid rgba(var(--theme-secondary-rgb), 0.25);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+
+/* ==========================================
+   "New!" Badge — appears when admin reveals a hidden invite
+   ========================================== */
+.invite-new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 208, 0, 0.12);
+  color: #ffd000;
+  border: 1px solid rgba(255, 208, 0, 0.35);
+  padding: 0.35rem 0.75rem;
+  border-radius: 30px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: new-badge-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes new-badge-pulse {
+  0%   { box-shadow: 0 0 0 rgba(255, 208, 0, 0); }
+  100% { box-shadow: 0 0 10px rgba(255, 208, 0, 0.4); }
+}
+
+/* ==========================================
+   Surprise Me Highlight (temporary pulse on picked card)
+   ========================================== */
+.invite-card.surprise-highlight {
+  animation: surprise-pulse 0.7s ease-in-out infinite alternate !important;
+  transform: translateY(-6px) scale(1.02) !important;
+}
+
+@keyframes surprise-pulse {
+  0%   { box-shadow: 0 0 20px rgba(var(--theme-primary-rgb), 0.4), 0 0 40px rgba(var(--theme-primary-rgb), 0.2); }
+  100% { box-shadow: 0 0 40px rgba(var(--theme-primary-rgb), 0.8), 0 0 80px rgba(var(--theme-primary-rgb), 0.4); }
+}
+
+/* ==========================================
+   Admin: Hidden Invite Row Styling
+   ========================================== */
+.custom-invite-row.hidden-invite {
+  border-color: rgba(255, 208, 0, 0.15);
+  background: rgba(255, 208, 0, 0.03);
+  opacity: 0.8;
+}
+
+.invite-hidden-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255, 208, 0, 0.12);
+  color: #ffd000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.custom-invite-action-btn.btn-hide {
+  color: var(--text-secondary);
+}
+
+.custom-invite-action-btn.btn-hide:hover {
+  color: #ffd000;
+  border-color: rgba(255, 208, 0, 0.3);
+  background: rgba(255, 208, 0, 0.05);
+}
+
+.custom-invite-action-btn.btn-hide.active {
+  color: #ffd000;
+  border-color: rgba(255, 208, 0, 0.4);
+  background: rgba(255, 208, 0, 0.08);
+}
+
+/* ==========================================
+   Admin: Private Notes Preview
+   ========================================== */
+.admin-notes-preview {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+/* ==========================================
+   Admin: Toggle Checkbox (Hidden / Surprise Mode)
+   ========================================== */
+.admin-toggle-group {
+  padding: 0.85rem 1rem;
+  background: rgba(255, 208, 0, 0.04);
+  border: 1px solid rgba(255, 208, 0, 0.15);
+  border-radius: 10px;
+}
+
+.admin-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.admin-toggle-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #ffd000;
+  flex-shrink: 0;
+}
+
+.admin-toggle-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+/* ==========================================
+   Admin: Welcome Message Panel
+   ========================================== */
+.admin-welcome-panel {
+  margin-bottom: 2.5rem;
+}
+
+.admin-welcome-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-welcome-save-btn {
+  flex-shrink: 0;
+  width: auto !important;
+  padding: 0.75rem 1.5rem !important;
+  white-space: nowrap;
+}
