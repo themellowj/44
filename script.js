@@ -100,6 +100,8 @@ const SEASON_THEMES = {
 let activeTheme  = SEASON_THEMES['love-island']; // currently active season theme
 let customInvites = [];                           // invites added via admin (localStorage)
 let completedInviteIds = new Set();               // set of completed invite IDs
+let editingInviteId = null;                       // ID of invite being edited, or null
+let editedPresets = {};                           // preset overrides map
 
 
 // ============================================================
@@ -206,6 +208,83 @@ window.toggleCompleted = function (id) {
   renderInvitesFeed();
 };
 
+/** Load preset overrides from localStorage. */
+function loadEditedPresets() {
+  const stored = localStorage.getItem('maila_edited_presets');
+  if (stored) {
+    try {
+      editedPresets = JSON.parse(stored);
+    } catch (e) {
+      console.error('Error parsing stored edited presets', e);
+      editedPresets = {};
+    }
+  } else {
+    editedPresets = {};
+  }
+}
+
+/** Save preset overrides to localStorage. */
+function saveEditedPresets() {
+  localStorage.setItem('maila_edited_presets', JSON.stringify(editedPresets));
+}
+
+/** Update the Admin form header, button labels and cancellation button. */
+function updateFormState() {
+  const titleEl = document.getElementById('form-section-title');
+  const btnEl = document.getElementById('add-invite-btn');
+  const container = document.getElementById('form-actions-container');
+  if (!titleEl || !btnEl || !container) return;
+
+  const existingCancel = document.getElementById('cancel-edit-btn');
+  if (existingCancel) existingCancel.remove();
+
+  if (editingInviteId) {
+    titleEl.innerHTML = '✦ Edit Invitation';
+    btnEl.textContent = 'SAVE CHANGES';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.id = 'cancel-edit-btn';
+    cancelBtn.className = 'admin-secondary-btn';
+    cancelBtn.style.padding = '0.85rem';
+    cancelBtn.textContent = 'CANCEL';
+    cancelBtn.onclick = cancelEditing;
+    container.appendChild(cancelBtn);
+  } else {
+    titleEl.innerHTML = '✦ Create New Invite';
+    btnEl.textContent = 'PUBLISH INVITATION';
+  }
+}
+
+/** Populate form and trigger editing state. */
+window.startEditingInvite = function (id) {
+  const invites = getCombinedInvites();
+  const invite = invites.find((inv) => inv.id === id);
+  if (!invite) return;
+
+  document.getElementById('invite-title').value = invite.title;
+  document.getElementById('invite-desc').value = invite.desc;
+  document.getElementById('invite-date').value = invite.date;
+  document.getElementById('invite-theme').value = invite.theme;
+  document.getElementById('invite-calendar').value = invite.calendar;
+
+  editingInviteId = id;
+  updateFormState();
+
+  const formSection = document.getElementById('invite-form');
+  if (formSection) {
+    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+/** Cancel active edit. */
+window.cancelEditing = function () {
+  editingInviteId = null;
+  updateFormState();
+  document.getElementById('invite-form').reset();
+  showToast('Editing cancelled.', '✨');
+};
+
 /**
  * getCombinedInvites()
  * Custom invites appear first (newest at top), then the hard-coded defaults.
@@ -213,7 +292,13 @@ window.toggleCompleted = function (id) {
  * snippet into DEFAULT_INVITES below.
  */
 function getCombinedInvites() {
-  return [...customInvites, ...DEFAULT_INVITES];
+  const combined = [...customInvites, ...DEFAULT_INVITES];
+  return combined.map((invite) => {
+    if (editedPresets[invite.id]) {
+      return { ...invite, ...editedPresets[invite.id] };
+    }
+    return invite;
+  });
 }
 
 // ============================================================
@@ -428,6 +513,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   loadInvitesState();
   loadCompletedStates();
+  loadEditedPresets();
 
   // Clear legacy localStorage session if present to force clean start
   if (localStorage.getItem('portal_session')) {
@@ -450,10 +536,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Sync data & theme updates across multiple open tabs/windows
 window.addEventListener('storage', (e) => {
-  if (e.key === 'maila_custom_invites' || e.key === 'maila_completed_ids' || e.key === 'maila_theme') {
+  if (e.key === 'maila_custom_invites' || e.key === 'maila_completed_ids' || e.key === 'maila_theme' || e.key === 'maila_edited_presets') {
     loadTheme();
     loadInvitesState();
     loadCompletedStates();
+    loadEditedPresets();
     renderInvitesFeed();
     if (adminPortal && !adminPortal.classList.contains('hidden')) {
       renderAdminPanel();
@@ -642,21 +729,55 @@ const inviteForm = document.getElementById('invite-form');
 inviteForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
-  const newInvite = {
-    id:       'custom-' + Date.now(),
-    title:    document.getElementById('invite-title').value.trim(),
-    desc:     document.getElementById('invite-desc').value.trim(),
-    date:     document.getElementById('invite-date').value.trim(),
-    theme:    document.getElementById('invite-theme').value,
-    calendar: document.getElementById('invite-calendar').value.trim(),
-  };
+  const title = document.getElementById('invite-title').value.trim();
+  const desc = document.getElementById('invite-desc').value.trim();
+  const date = document.getElementById('invite-date').value.trim();
+  const theme = document.getElementById('invite-theme').value;
+  const calendar = document.getElementById('invite-calendar').value.trim();
 
-  customInvites.unshift(newInvite);
-  saveInvitesState();
+  if (editingInviteId) {
+    const isPreset = editingInviteId.startsWith('preset-');
+    if (isPreset) {
+      editedPresets[editingInviteId] = {
+        id: editingInviteId,
+        title,
+        desc,
+        date,
+        theme,
+        calendar
+      };
+      saveEditedPresets();
+    } else {
+      customInvites = customInvites.map((inv) => {
+        if (inv.id === editingInviteId) {
+          return { ...inv, title, desc, date, theme, calendar };
+        }
+        return inv;
+      });
+      saveInvitesState();
+    }
+
+    editingInviteId = null;
+    updateFormState();
+    showToast('Invitation updated successfully!', '✨');
+  } else {
+    const newInvite = {
+      id:       'custom-' + Date.now(),
+      title,
+      desc,
+      date,
+      theme,
+      calendar,
+    };
+
+    customInvites.unshift(newInvite);
+    saveInvitesState();
+    showToast('New invitation published!', '✨');
+  }
+
   renderInviteManager();
-  renderInvitesFeed(); // Update Maila's feed immediately on publish
+  renderInvitesFeed();
   inviteForm.reset();
-  showToast('New invitation published!', '✨');
 });
 
 /** Render the live invites list (presets + custom) and refresh the code exporter. */
@@ -697,6 +818,11 @@ function renderInviteManager() {
           </div>
         </div>
         <div class="custom-invite-actions">
+          <button class="custom-invite-action-btn btn-edit"
+                  onclick="startEditingInvite('${invite.id}')"
+                  title="Edit invite">
+            ✏️
+          </button>
           <button class="custom-invite-action-btn btn-done ${isCompleted ? 'active' : ''}"
                   onclick="toggleCompleted('${invite.id}')"
                   title="${isCompleted ? 'Mark as Active' : 'Mark as Finished'}">

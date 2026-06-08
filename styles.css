@@ -802,6 +802,16 @@ body {
   padding-right: 2.5rem;
 }
 
+.admin-form-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.admin-form-actions button {
+  flex: 1;
+}
+
 .admin-submit-btn {
   background: var(--theme-secondary);
   color: #000;
