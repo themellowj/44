@@ -1,0 +1,11 @@
+{
+  "name": "maila-portal",
+  "version": "1.0.0",
+  "description": "Maila's Private Love Island Portal — static site with seasonal theme controls",
+  "scripts": {
+    "dev": "npx --yes http-server . -p 3000 -o -c-1",
+    "start": "npx --yes http-server . -p 3000 -o"
+  },
+  "keywords": ["maila", "love-island", "portal"],
+  "author": "JM44"
+}

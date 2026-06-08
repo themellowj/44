@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MJ & JM 44 | Maila's Private Portal</title>
+  <meta name="description"
+    content="A personalized private experience for Maila — date night invites, memories, and more.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Background Ambient Atmosphere -->
+  <div class="bg-atmosphere">
+    <div class="glow-orb glow-orb-pink"></div>
+    <div class="glow-orb glow-orb-cyan"></div>
+    <div class="bg-stars"></div>
+    <div class="bg-silhouettes"></div>
+  </div>
+
+  <!-- Particle Effects Canvas (Hearts, Sparkles) -->
+  <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- 1. Authentication Overlay (Covers viewport on load) -->
+    <div class="auth-overlay" id="auth-overlay">
+      <div class="auth-container">
+        <div class="logo-container">
+          <h1 class="logo-island logo-glow"><span id="logo-text">Love Island</span></h1>
+          <span class="logo-sub" id="logo-tagline">MJ &amp; JM 44</span>
+        </div>
+        <div class="glass-card auth-card">
+          <h2 class="auth-prompt">Enter Private Passcode</h2>
+          <div class="input-group">
+            <input type="password" id="passcode-input" class="passcode-input" maxlength="4" placeholder="••••"
+              autocomplete="off" autofocus>
+          </div>
+          <button id="unlock-btn" class="auth-btn">UNLOCK EXPERIENCE</button>
+          <div class="error-msg" id="error-msg">Invalid passcode. Please try again.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Maila's Portal (Main Interface: Access via MJ44) -->
+    <main class="hidden" id="maila-portal">
+      <!-- Portal Header Greeting -->
+      <header class="portal-header">
+        <h1 class="greeting-text text-neon-gradient">Hello Maila </h1>
+        <p class="subtitle-text">Welcome back to your private island experience. Explore your unlocked dashboard below.
+        </p>
+      </header>
+
+      <!-- Action Grid -->
+      <section class="grid-actions">
+        <!-- Unlocked Action: Invites -->
+        <div class="action-card active" id="action-invites">
+          <div class="action-icon-wrapper">
+            <span class="action-icon">✉️</span>
+          </div>
+          <h3 class="action-title text-neon-gradient">Invites</h3>
+          <p class="action-desc">Check out your upcoming date night invitations and calendar entries.</p>
+        </div>
+
+        <!-- Locked Action: Photos -->
+        <div class="action-card locked" data-feature-name="Photos">
+          <div class="lock-badge">🔒</div>
+          <div class="action-icon-wrapper">
+            <span class="action-icon">📸</span>
+          </div>
+          <h3 class="action-title">Photos</h3>
+          <p class="action-desc">Coming soon in Season 2 🌴</p>
+        </div>
+      </section>
+
+      <!-- Invites / Date Night Section (revealed when clicking Invites card) -->
+      <section class="invites-section hidden" id="invites-section">
+        <div class="invites-header-container">
+          <h2 class="invites-title text-neon-gradient" id="invites-title-text">Date Night Invites</h2>
+          <p class="invites-subtitle" id="invites-subtitle-text">Exciting plans await us</p>
+        </div>
+
+        <!-- Invites Grid -->
+        <div class="invites-grid" id="invites-grid">
+          <!-- Dynamically populated from JS -->
+        </div>
+      </section>
+
+      <footer class="portal-footer">
+        <p>Made with 💖 for Maila &bull; MJ &amp; JM 44 &bull; <span id="footer-brand">Love Island</span> &bull; <a
+            href="#" id="portal-logout">Lock Site</a></p>
+      </footer>
+    </main>
+
+    <!-- 3. Admin Interface (Dashboard Panel: Access via JM44) -->
+    <main class="hidden" id="admin-portal">
+      <header class="admin-header">
+        <div>
+          <h1 class="admin-title text-neon-gradient">Admin Dashboard</h1>
+          <p class="subtitle-text" style="margin: 0;">Manage date night invitations for Maila's interface.</p>
+        </div>
+        <button class="admin-logout-btn" id="admin-logout">Lock Dashboard</button>
+      </header>
+
+      <!-- Season Theme Selector (full-width, above the grid) -->
+      <div class="glass-card" id="admin-theme-panel">
+        <!-- Rendered by renderThemePanel() in script.js -->
+      </div>
+
+      <div class="admin-grid">
+        <!-- Create Invite Form -->
+        <section class="glass-card">
+          <h2 class="admin-section-title"><span style="color: var(--neon-cyan);">✦</span> Create New Invite</h2>
+          <form id="invite-form" onsubmit="return false;">
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-title">Invite Title</label>
+              <input type="text" id="invite-title" class="admin-input" placeholder="e.g., Beachside Dinner Picnic"
+                required>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-desc">Description</label>
+              <textarea id="invite-desc" class="admin-textarea"
+                placeholder="Tell her what we are doing on this date night..." required></textarea>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-date">Date &amp; Time Text</label>
+              <input type="text" id="invite-date" class="admin-input" placeholder="e.g., Friday, June 12th @ 7:00 PM"
+                required>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-theme">Color Theme</label>
+              <select id="invite-theme" class="admin-select" required>
+                <option value="theme-pink-purple">Love Neon (Pink &amp; Purple Glow)</option>
+                <option value="theme-cyan-blue">Moonlight Ocean (Cyan &amp; Blue Glow)</option>
+                <option value="theme-gold-orange">Tropical Sunset (Gold &amp; Peach Glow)</option>
+              </select>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="invite-calendar">Google Calendar Link</label>
+              <input type="url" id="invite-calendar" class="admin-input" placeholder="https://calendar.google.com/..."
+                required>
+            </div>
+
+            <button type="submit" class="admin-submit-btn" id="add-invite-btn">PUBLISH INVITATION</button>
+          </form>
+        </section>
+
+        <!-- Manage Custom Invites & Code Gen -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Custom Invites List -->
+          <section class="glass-card" style="flex-grow: 1;">
+            <h2 class="admin-section-title"><span style="color: var(--neon-pink);">✦</span> Date Night Invitations
+              (Live)</h2>
+            <div class="custom-invites-panel" id="custom-invites-list">
+              <!-- Dynamically populated -->
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
